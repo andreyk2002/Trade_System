@@ -1,6 +1,8 @@
 <doctype html>
 <html lang="en">
 <head>
+    <link rel="stylesheet" href="styles/reset.css">
+    <link rel="stylesheet" href="styles/style.css">
     <meta charset="UTF-8">
     <meta name="viewport"
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
@@ -9,6 +11,7 @@
 </head>
 <body>
 <#include 'fragments/header.ftl'>
+<h1 class="start-header">Edit item "${item.name}"</h1>
 <div class="register">
     <form class="form-login" action="/edit" method="post">
         <input type="hidden" name="itemId" value="${item.id}">

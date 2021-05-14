@@ -17,6 +17,9 @@
         <input class="input-control" type="password" name="password" placeholder="enter password"/>
         <button class="login-button" type="submit">Login</button>
     </form>
+    <#if errorMessage??>
+        <h2 style="color: red; margin-left: 30%">${errorMessage}</h2>
+    </#if>
 </div>
 </body>
 </html>

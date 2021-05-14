@@ -1,6 +1,7 @@
 package fpmi.by.plugins
 
 import fpmi.by.entity.Order
+import fpmi.by.entity.OrderDto
 import fpmi.by.entity.Product
 import fpmi.by.entity.User
 import fpmi.by.service.CategoryService
@@ -16,7 +17,9 @@ import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.sessions.*
 import io.ktor.util.*
+import org.joda.time.DateTime
 import java.math.BigDecimal
+import kotlin.math.abs
 
 
 fun Application.configureRouting() {
@@ -62,7 +65,9 @@ fun Application.configureRouting() {
                 call.sessions.set(session.copy(count = session.count + 1))
                 call.respondRedirect("/")
             } else {
-                call.respondText { "Wrong username or password" }
+                val errorMessage = "Wrong username or password"
+                val loginPage = FreeMarkerContent("login.ftl", mapOf("errorMessage" to errorMessage))
+                call.respond(loginPage)
             }
 
         }
@@ -146,11 +151,75 @@ fun Application.configureRouting() {
 
         }
 
-        get("/research"){
+        get("/research") {
+            val categories = categoryService.getAll()
             val orders = orderService.getAll()
-            val page = FreeMarkerContent("analitics.ftl", mapOf("orders" to orders))
+            val ordersPoints = formOrdersPoints(orders)
+            val page = FreeMarkerContent("analitics.ftl", mapOf("orders" to ordersPoints, "categories" to categories))
+            call.respond(page)
+        }
+
+        post("/searchCategories") {
+            val parameters = call.receiveParameters()
+            val minDate = DateTime.parse(parameters["minDate"] as String)
+            val maxDate = DateTime.parse(parameters["maxDate"] as String)
+            val categoryId = (parameters["categoryId"] as String).toInt()
+            val searchResults = orderService.searchByDateAndCategory(categoryId, minDate, maxDate)
+            val page = FreeMarkerContent("orders.ftl", mapOf("orders" to searchResults))
+            call.respond(page)
+        }
+
+        post("/searchUsers") {
+            val parameters = call.receiveParameters()
+            val productName = parameters["productName"] as String
+            val usersByProductName = userService.searchByProductName(productName).distinctBy { it.id }
+            val page = FreeMarkerContent("users.ftl", mapOf("users" to usersByProductName))
             call.respond(page)
         }
     }
 }
 
+fun formOrdersPoints(orders: List<OrderDto>): Map<String, String> {
+    val sortedByDate = orders.sortedBy { it.date }
+    val minData = sortedByDate.first().date.millis
+    val maxPrice = orders.maxByOrNull { it.price }!!
+    val delta = subtractDates(sortedByDate.first().date, sortedByDate.last().date)
+
+    val productsWithOrders = mutableMapOf<String, List<OrderDto>>()
+    for (order in sortedByDate) {
+        val productName = order.productName
+        val list = productsWithOrders[productName]?.toMutableList()
+        if (list != null) {
+            list += order
+            productsWithOrders[productName] = list
+        } else {
+            val newList = mutableListOf(order)
+            productsWithOrders[productName] = newList
+        }
+
+    }
+
+    //first point - data, second - frequency
+
+    val productsPoints = mutableMapOf<String, String>()
+    for (product in productsWithOrders.keys) {
+        var points = ""
+        val currentOrders = productsWithOrders[product]!!
+        for (i in 0..200 step 20) {
+            val countInDatePeriod = currentOrders.filter { orderDto ->
+                abs(getPoint(orderDto, minData, delta) - i) < 20
+            }.count()
+            val ratioCount = 200 - countInDatePeriod * 200.0 / currentOrders.size
+            points += "$i,$ratioCount "
+        }
+        productsPoints[product] = points.trim()
+    }
+    return productsPoints
+}
+
+private fun getPoint(orders: OrderDto, minData: Long, delta: Long) =
+    200.0 * (orders.date.millis - minData) / delta
+
+fun subtractDates(first: DateTime, last: DateTime): Long {
+    return last.millis - first.millis
+}

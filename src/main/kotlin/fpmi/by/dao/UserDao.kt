@@ -1,8 +1,9 @@
 package fpmi.by.dao
 
+import fpmi.by.dao.tables.Orders
+import fpmi.by.dao.tables.Products
 import fpmi.by.dao.tables.Users
 import fpmi.by.entity.User
-import fpmi.by.entity.UserRole
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.and
@@ -49,6 +50,12 @@ class UserDao(private val db: Database) : Dao<User> {
     private fun md5(input: String): String {
         val md = MessageDigest.getInstance("MD5")
         return BigInteger(1, md.digest(input.toByteArray())).toString(16).padStart(32, '0')
+    }
+
+    suspend fun getByProductName(productName: String): List<User> = transaction(db) {
+        (Users innerJoin Orders innerJoin Products).select { (Products.name eq productName) }.map {
+            User(name = it[Users.name], role = it[Users.role], id = it[Users.id])
+        }
     }
 
 }

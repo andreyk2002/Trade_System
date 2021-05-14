@@ -6,6 +6,7 @@ import fpmi.by.dao.UserDao
 import fpmi.by.entity.Order
 import fpmi.by.entity.OrderDto
 import kotlinx.coroutines.runBlocking
+import org.joda.time.DateTime
 
 class OrderService {
 
@@ -22,6 +23,10 @@ class OrderService {
 
     fun getAll(): List<OrderDto> = runBlocking {
         orderDao.getAllOrders()
+    }
+
+    fun searchByDateAndCategory(categoryId: Int, minDate: DateTime, maxDate: DateTime):List<OrderDto> = runBlocking{
+        orderDao.getByDateAndCategory(categoryId, minDate, maxDate)
     }
 
 }

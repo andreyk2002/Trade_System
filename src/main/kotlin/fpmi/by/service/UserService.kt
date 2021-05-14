@@ -8,15 +8,19 @@ import kotlinx.coroutines.runBlocking
 class UserService {
 
 
-    private val userRepository: UserDao
+    private val userDao: UserDao
 
     init {
         val connectionManager = ConnectionManager()
-        userRepository = connectionManager.getUserRepository()
+        userDao = connectionManager.getUserRepository()
     }
 
     fun login(login: String, password: String): User? = runBlocking {
-        userRepository.getByLoginAndPassword(login, password)
+        userDao.getByLoginAndPassword(login, password)
+    }
+
+    fun searchByProductName(productName: String) : List<User> = runBlocking {
+        userDao.getByProductName(productName)
     }
 
 }

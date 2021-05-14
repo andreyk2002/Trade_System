@@ -12,6 +12,7 @@
 <body>
 <main>
     <#include 'fragments/header.ftl'>
+    <h1 class="start-header">Create new item</h1>
     <div class="register">
         <form class="form-login" action="/addItem" method="post">
             <input required class="input-control" type="text" name="name" placeholder="item name"/>

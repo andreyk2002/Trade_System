@@ -2,11 +2,12 @@ package fpmi.by.dao
 
 import fpmi.by.dao.tables.Orders
 import fpmi.by.dao.tables.Products
+import fpmi.by.dao.tables.Users
 import fpmi.by.entity.Order
 import fpmi.by.entity.OrderDto
-import org.jetbrains.exposed.sql.Database
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.selectAll
+import fpmi.by.entity.User
+import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.experimental.transaction
 import org.joda.time.DateTime
 
@@ -52,6 +53,16 @@ class OrderDao(private val db: Database) : Dao<Order> {
 
     override suspend fun getAll(): List<Order> {
         TODO("Not yet implemented")
+    }
+
+    suspend fun getByDateAndCategory(categoryId: Int, minDate: DateTime, maxDate: DateTime) : List<OrderDto> = transaction(db){
+        (Orders innerJoin Products).select{(Products.categoryId eq categoryId) and (Orders.orderDate.between(minDate, maxDate))}.map {
+            OrderDto(
+                productName = it[Products.name],
+                price = it[Products.price],
+                date = it[Orders.orderDate]
+            )
+        }
     }
 
 }
